@@ -37,5 +37,6 @@ Use the save_catered_resume_data tool to save the resume data to the catered_res
 The save_catered_resume_data tool returns a "filename" field — pass that value as the filename parameter to generate_pdf.
 If the generated resume is more than 1 page, remake the catered_resume_data and save it again.
 Repeat the process until the generated resume is no more than 1 page.
+If the page_fill is less than 0.90, add more content to better fill the page.
 """
         return prompt

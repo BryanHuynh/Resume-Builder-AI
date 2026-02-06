@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
     "debugpy>=1.8.20",
-    "fastmcp>=2.14.5",
+    "fastmcp>=3.0.0b1",
     "pylatex>=1.4.2",
+    "pymupdf>=1.26.7",
 ]

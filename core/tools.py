@@ -1,16 +1,9 @@
-import base64
-from dataclasses import asdict
-import json
 import re
 from pathlib import Path
-from fastmcp.server import FastMCP
-from mcp import Resource
-
+from fastmcp import FastMCP
+import pymupdf
 from doc_utils.doc_builder import DocBuilder
 from doc_utils.doc_model import DocModel
-
-from mcp.types import TextContent, BlobResourceContents
-
 
 docs_dir = Path("documents")
 user_dir = docs_dir / "user_data"
@@ -87,32 +80,27 @@ def register_tools(mcp: FastMCP):
         builder = DocBuilder(doc_model, job_name)
         builder.build()
         export_path = builder.export()
-        with open(export_path, "rb") as f:
-            pdf_bytes = f.read()
+        pdf = pymupdf.open(str(export_path))
+        page_count = len(pdf)
+        file_size_kb = export_path.stat().st_size / 1024
 
-        page_count = len(re.findall(rb"/Type\s*/Page(?!s)", pdf_bytes))
-        file_size_kb = len(pdf_bytes) / 1024
-
-        def _count_desc_chars(descs):
-            return sum(
-                len(d.description) + _count_desc_chars(d.sub_sections) for d in descs
-            )
-
-        total_chars = sum(
-            len(entry.title)
-            + len(entry.left_subheader)
-            + len(entry.right_subheader)
-            + _count_desc_chars(entry.sub_sections)
-            for entries in doc_model.sections.values()
-            for entry in entries
-        )
+        last_page = pdf[-1]
+        page_height = last_page.rect.height
+        content_blocks = last_page.get_text("blocks")
+        if content_blocks:
+            lowest_y = max(block[3] for block in content_blocks)  # block[3] = y1
+        else:
+            lowest_y = 0.0
+        page_fill = round(lowest_y / page_height, 2)
+        pdf.close()
 
         metadata = {
             "success": True,
             "message": f"Resume generated successfully for {job_name} position",
-            "uri": export_path.resolve().as_uri(),
+            "path": export_path.resolve().as_uri(),
             "name": export_path.name,
             "page_count": page_count,
             "file_size_kb": file_size_kb,
+            "page_fill": page_fill,
         }
         return metadata
