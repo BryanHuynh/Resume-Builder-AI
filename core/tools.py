@@ -87,7 +87,6 @@ def register_tools(mcp: FastMCP):
         export_path = builder.export()
         with open(export_path, "rb") as f:
             pdf_bytes = f.read()
-            pdf_base64 = base64.b64encode(pdf_bytes).decode("utf-8")
 
         page_count = len(re.findall(rb"/Type\s*/Page(?!s)", pdf_bytes))
         file_size_kb = len(pdf_bytes) / 1024
