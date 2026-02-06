@@ -1,0 +1,39 @@
+from pathlib import Path
+from fastmcp.server import FastMCP
+
+
+docs_dir = Path("documents")
+user_dir = docs_dir / "user_data"
+
+
+def register_prompts(mcp: FastMCP):
+    @mcp.prompt("Create a new resume")
+    def create_resume(name: str, job_posting: str):
+        user_data = Path(f"{user_dir}/{name}.json")
+        if not user_data.exists():
+            return "User information not found"
+        with open(user_data, "r") as f:
+            user_info = f.read()
+        prompt = f"""
+You are a resume writer. 
+You are tasked with creating a resume for a new job opening. 
+The job posting is as follows:
+{job_posting}
+
+Your task is to create a resume that highlights the job posting and showcases your relevant experience and skills. 
+Please ensure that the resume is well-organized, concise, and visually appealing. 
+Use a professional and polished writing style, and include relevant information such as education, work experience, and skills.
+If you believe a point can be improved, please suggest a change, but do not change the content.
+Remove any unnessary information and or points that are not relevant to the job posting.
+If there is any additional information that you want to know about the user to help fill out the resume, please ask.
+If there is information about certifcations, remove any that are not relevant to the job posting.
+
+Here is the user information:
+{user_info}
+
+Use the save_catered_resume_data tool to save the resume data to the catered_resume_data directory before making the call to generate_pdf.
+The save_catered_resume_data tool returns a "filename" field — pass that value as the filename parameter to generate_pdf.
+If the generated resume is more than 1 page, remake the catered_resume_data and save it again.
+Repeat the process until the generated resume is no more than 1 page.
+"""
+        return prompt
