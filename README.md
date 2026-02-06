@@ -43,3 +43,20 @@ PDF generation requires a system-level LaTeX installation (e.g., TeX Live, MiKTe
 - `generate_pdf()` tool returns the PDF base64-encoded via `EmbeddedResource`
 - All file paths use `pathlib.Path`
 - Uses `uv` for dependency management with lock file
+
+## Claude Desktop Configuration
+```json
+{
+  "mcpServers": {
+    "ai_resume_editor": {
+      "command": "uv",
+      "args": [
+        "--directory",
+        "<PATH\\TO\\PROJECT\\DIR>",
+        "run",
+        "main.py"
+      ]
+    }
+  }
+}
+```
