@@ -92,7 +92,7 @@ class DocBuilder:
             date_str += f" - {entry.end_date.strftime('%b %Y')}"
         section.append(MediumText(bold(date_str)))
         section.append(LineBreak())
-        section.append(SmallText(italic(entry.left_subheader)))
+        section.append(MediumText(italic(entry.left_subheader)))
         section.append(HFill())
         section.append(MediumText(italic(entry.right_subheader)))
         if len(entry.sub_sections) > 0:
@@ -113,7 +113,7 @@ class DocBuilder:
         itemizer.add_item(section_content.description)
         if len(section_content.sub_sections) > 0:
             with itemizer.create(
-                Itemize(options=config.itemize_options)
+                Itemize(options=config.sub_itemize_options)
             ) as sub_itemizer:
                 for sub_section in section_content.sub_sections:
                     self.build_section_content(sub_itemizer, sub_section)
@@ -124,5 +124,5 @@ class DocBuilder:
             with self.doc.create(Itemize(options=config.itemize_options)) as itemizer:
                 self.doc.append(Command("vspace", NoEscape("-15pt")))
                 for item_name, item_values in additionals.items.items():
-                    itemizer.add_item((bold(f"{item_name}: ")))
+                    itemizer.add_item(SmallText(bold(f"{item_name}: ")))
                     itemizer.append(SmallText(", ".join(item_values)))

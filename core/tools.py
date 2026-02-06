@@ -21,18 +21,20 @@ output_dir = Path("output")
 
 def register_tools(mcp: FastMCP):
     @mcp.tool()
-    def save_resume_data(data: DocModel):
-        """Saves the resume data as a json file to the user's directory"""
+    def save_user_data(data: DocModel):
+        """Saves the users data as a json file to the user_data directory.
+        """
+        user_file_path = data.user_info.full_name.replace(" ", "_")
         json_data = data.model_dump_json(indent=2)
-
-        user_data = f"{user_dir}/{data.user_info.full_name.replace(' ', '_')}.json"
+        user_dir.mkdir(parents=True, exist_ok=True)
+        user_data = user_dir / f"{user_file_path}.json"
         with open(user_data, "w") as f:
             f.write(json_data)
         return {
             "success": True,
-            "message": f"Saved resume data for {data.user_info.full_name} to {user_data}",
+            "message": f"Saved user data for {data.user_info.full_name} to {user_data}",
         }
-
+    
     @mcp.tool()
     def save_catered_resume_data(job: str, data: DocModel):
         """Saves the catered resume data as a json file to the catered resumes directory.

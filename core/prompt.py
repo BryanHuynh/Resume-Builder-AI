@@ -8,7 +8,7 @@ user_dir = docs_dir / "user_data"
 
 def register_prompts(mcp: FastMCP):
     @mcp.prompt("Create a new resume")
-    def create_resume(name: str, job_posting: str):
+    def create_resume(name: str, company_name: str, position: str, job_posting: str):
         user_data = Path(f"{user_dir}/{name}.json")
         if not user_data.exists():
             return "User information not found"
@@ -17,6 +17,7 @@ def register_prompts(mcp: FastMCP):
         prompt = f"""
 You are a resume writer. 
 You are tasked with creating a resume for a new job opening. 
+The company name is {company_name} and the position is {position}.
 The job posting is as follows:
 {job_posting}
 
@@ -26,7 +27,8 @@ Use a professional and polished writing style, and include relevant information 
 If you believe a point can be improved, please suggest a change, but do not change the content.
 Remove any unnessary information and or points that are not relevant to the job posting.
 If there is any additional information that you want to know about the user to help fill out the resume, please ask.
-If there is information about certifcations, remove any that are not relevant to the job posting.
+If there is information about certifications, remove any that are not relevant to the job posting.
+Do not remove any sub-sections, expecially if they include business impact.
 
 Here is the user information:
 {user_info}
