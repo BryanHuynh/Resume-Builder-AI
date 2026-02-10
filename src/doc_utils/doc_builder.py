@@ -1,6 +1,9 @@
-import subprocess
+import json
+import uuid
+import httpx
 from pathlib import Path
 from typing import Container
+from config import AWS_PDF_FUNCTION_URL
 from doc_utils.doc_model import (
     AdditionalsListedSectionContent,
     DocModel,
@@ -44,30 +47,19 @@ class DocBuilder:
             self.build_section(section_title, section_entries)
             self.doc.append(LineBreak())
         self.build_additionals(self.model.additionals)
+        return self
 
-    def export(self):
-        tex_path = output_dir / self.export_name
-        self.doc.generate_tex(str(tex_path))
-        subprocess.run(
-            [
-                "pdflatex",
-                "-interaction=batchmode",
-                "-halt-on-error",
-                f"-output-directory={output_dir}",
-                f"{tex_path}.tex",
-            ],
-            stdin=subprocess.DEVNULL,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            timeout=30,
-        )
-        # Clean aux files
-        for ext in [".aux", ".log"]:
-            aux = tex_path.with_suffix(ext)
-            if aux.exists():
-                aux.unlink()
-        return Path(f"{tex_path}.pdf")
-
+    async def export(self) -> dict:
+        latex_str = self.doc.dumps()
+        filename = str(uuid.uuid4())
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                AWS_PDF_FUNCTION_URL,
+                json={"latex": latex_str, "filename": filename}
+            )
+            result = response.json()
+            return result
+        
     def build_header(self, user_info: UserInfo):
         with self.doc.create(MiniPage(align="c")) as header:
             header.append(HugeText(bold(user_info.full_name)))
