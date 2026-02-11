@@ -6,6 +6,7 @@ from db.entities.section import Section
 from db.entities.additional import Additional
 from doc_utils.doc_model import DocModel, SectionContent
 
+
 def upsert_user(user_id: str, doc_model: DocModel):
     """Upsert a user and their full resume data (sections + additionals)."""
     info = doc_model.user_info
@@ -20,7 +21,8 @@ def upsert_user(user_id: str, doc_model: DocModel):
                 city_province=info.city_province,
                 links=info.links,
             )
-            session.add(user)
+            session.add(user)  # type: ignore
+            session.commit()
         else:
             user.full_name = info.full_name
             user.email = info.email
@@ -37,6 +39,7 @@ def upsert_user(user_id: str, doc_model: DocModel):
                     sort_order=sort_order,
                 )
                 session.add(section)
+                session.commit()
 
         additional = Additional(
             user_id=user_id,
@@ -44,6 +47,7 @@ def upsert_user(user_id: str, doc_model: DocModel):
             items=doc_model.additionals.items,
         )
         session.add(additional)
+        session.commit()
 
 
 def get_user_resume(user_id: str) -> DocModel | None:

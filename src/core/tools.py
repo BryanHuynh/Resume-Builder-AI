@@ -61,6 +61,7 @@ def register_tools(mcp: FastMCP):
     def save_user_data(data: DocModel):
         """Saves the user's resume data to the database."""
         user_id = get_access_token().claims.get("sub")
+        print(data.user_info.email)
         user_repository.upsert_user(user_id, data)
         return {
             "success": True,

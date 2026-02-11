@@ -1,6 +1,6 @@
 from sqlalchemy import select
 
-from db.database import get_db
+from db.database import get_db, get_session
 from db.entities.catered_resume import CateredResume
 from doc_utils.doc_model import DocModel
 
@@ -8,7 +8,7 @@ from doc_utils.doc_model import DocModel
 def save_catered_resume(user_id: str, job_name: str, doc_model: DocModel):
     """Upsert a catered resume for a user+job combination."""
     resume_json = doc_model.model_dump(mode="json")
-    with get_db() as db:
+    with get_session() as db:
         row = db.execute(
             select(CateredResume).where(
                 CateredResume.user_id == user_id,
@@ -23,6 +23,7 @@ def save_catered_resume(user_id: str, job_name: str, doc_model: DocModel):
                 resume_data=resume_json,
             )
             db.add(row)
+            db.commit()
         else:
             row.resume_data = resume_json
 
