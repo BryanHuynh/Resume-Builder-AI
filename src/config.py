@@ -21,16 +21,6 @@ assert AUTH0_AUDIENCE is not None, "AUTH0_AUDIENCE must be set"
 # AWS
 AWS_PDF_FUNCTION_URL = os.getenv("AWS_PDF_FUNCTION_URL", "")
 
-# SUPABASE
-SUPABASE_USER= os.getenv("SUPABASE_USER", None)
-SUPABASE_PASSWORD=os.getenv("SUPABASE_PASSWORD", None)
-SUPABASE_HOST=os.getenv("SUPABASE_HOST", None)
-SUPABASE_PORT=os.getenv("SUPABASE_PORT", None)
-SUPABASE_DBNAME=os.getenv("SUPABASE_DBNAME", None)
+DATABASE_URL = os.getenv("DATABASE_URL", None)
 
-assert SUPABASE_USER is not None, "SUPABASE_USER must be set"
-assert SUPABASE_PASSWORD is not None, "SUPABASE_PASSWORD must be set"
-assert SUPABASE_HOST is not None, "SUPABASE_HOST must be set"
-assert SUPABASE_PORT is not None, "SUPABASE_PORT must be set"
-assert SUPABASE_DBNAME is not None, "SUPABASE_DBNAME must be set"
-
+assert DATABASE_URL is not None, "DATABASE_URL must be set"

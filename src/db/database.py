@@ -3,19 +3,12 @@ from sqlalchemy.orm import sessionmaker, Session
 from contextlib import contextmanager
 import os
 from dotenv import load_dotenv
-from config import (
-    SUPABASE_DBNAME,
-    SUPABASE_HOST,
-    SUPABASE_PASSWORD,
-    SUPABASE_PORT,
-    SUPABASE_USER,
-)
+import config
 
-load_dotenv()
 
-DATABASE_URL = os.getenv("DATABASE_URL")
+DATABASE_URL = config.DATABASE_URL
 
-DATABASE_URL = f"postgresql+psycopg2://{SUPABASE_USER}:{SUPABASE_PASSWORD}@{SUPABASE_HOST}:{SUPABASE_PORT}/{SUPABASE_DBNAME}?sslmode=require"
+DATABASE_URL = f"{DATABASE_URL}?sslmode=prefer"
 
 engine = create_engine(DATABASE_URL)
 
