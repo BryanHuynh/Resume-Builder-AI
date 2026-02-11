@@ -26,6 +26,7 @@ def save_catered_resume(user_id: str, job_name: str, doc_model: DocModel):
             db.commit()
         else:
             row.resume_data = resume_json
+            db.commit()
 
 
 def get_catered_resume(user_id: str, job_name: str) -> DocModel | None:
