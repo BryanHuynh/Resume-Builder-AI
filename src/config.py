@@ -3,6 +3,8 @@ import os
 
 load_dotenv()
 
+HOST = os.getenv("HOST", "0.0.0.0")
+PORT = int(os.getenv("PORT", 8000))
 
 #auth0 config
 AUTH0_CONFIG_URL=os.getenv("AUTH0_CONFIG_URL", None)

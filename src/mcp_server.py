@@ -1,11 +1,8 @@
-import base64
 from pathlib import Path
-import re
+
 from cryptography.fernet import Fernet
 from fastmcp import FastMCP
 from fastmcp.server.auth.providers.auth0 import Auth0Provider
-from jwt import PyJWKClient
-import jwt
 
 from core.prompt import register_prompts
 from core.resources import register_resources
@@ -27,4 +24,4 @@ register_prompts(mcp)
 
 
 if __name__ == "__main__":
-    mcp.run()
+    mcp.run(transport="streamable-http", host=config.HOST, port=config.PORT)
