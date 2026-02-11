@@ -1,12 +1,14 @@
 from fastmcp.server import FastMCP
+from fastmcp.server.dependencies import get_access_token
 from db.repo import user_repository
 
 
 def register_prompts(mcp: FastMCP):
     @mcp.prompt("Create a new resume")
-    def create_resume(name: str, company_name: str, position: str, job_posting: str):
-        """name = user_id from the auth token."""
-        user_info = user_repository.get_user_resume_json(name)
+    def create_resume(company_name: str, position: str, job_posting: str):
+        """Create a tailored resume for a job posting. User is identified from the auth token."""
+        user_id = get_access_token().claims.get("sub")
+        user_info = user_repository.get_user_resume_json(user_id)
         if user_info is None:
             return "User information not found"
         prompt = f"""
