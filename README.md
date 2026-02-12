@@ -1,7 +1,12 @@
-
 ## Project Overview
 
 AI Resume Editor — a Python MCP (Model Context Protocol) server that lets AI systems tailor resumes to job postings and generate professional PDFs via LaTeX. Resume data is stored as JSON, validated with Pydantic models, and rendered through PyLaTeX.
+
+MCP Server URL: https://resume-builder-ai-production-b0ae.up.railway.app/mcp
+This mcp server uses Auth0 to authenticate users upon registering the MCP server. Data is stored alongside the MCP Server instance on Railway as a postgres instance.
+
+Self hosted version can be found under release/self_hosted
+
 
 To download PyLaTeX on windows go to: https://ctan.mirror.rafal.ca/systems/win32/miktex/setup/
 
