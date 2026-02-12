@@ -6,7 +6,12 @@ readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
     "debugpy>=1.8.20",
+    "fastapi>=0.128.5",
     "fastmcp>=3.0.0b1",
+    "psycopg2>=2.9.11",
     "pylatex>=1.4.2",
     "pymupdf>=1.26.7",
+    "redis>=5.0.0",
+    "scalekit-sdk-python>=2.4.16",
+    "sqlalchemy>=2.0.46",
 ]
