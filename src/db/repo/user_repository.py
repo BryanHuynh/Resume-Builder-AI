@@ -4,6 +4,8 @@ from db.database import get_session
 from db.entities.user import User
 from db.entities.section import Section
 from db.entities.additional import Additional
+from db.repo.additionals_repository import upsert_additionals
+from db.repo.section_repository import upsert_section
 from doc_utils.doc_model import DocModel, SectionContent
 
 
@@ -32,22 +34,16 @@ def upsert_user(user_id: str, doc_model: DocModel):
 
         for section_name, entries in doc_model.sections.items():
             for sort_order, entry in enumerate(entries):
-                section = Section(
-                    user_id=user_id,
-                    section_name=section_name,
-                    content=entry.model_dump(mode="json"),
-                    sort_order=sort_order,
-                )
-                session.add(section)
-                session.commit()
+                upsert_section(user_id, section_name, entry, sort_order)
 
-        additional = Additional(
-            user_id=user_id,
-            title=doc_model.additionals.title,
-            items=doc_model.additionals.items,
-        )
-        session.add(additional)
-        session.commit()
+        upsert_additionals(user_id, doc_model.additionals.title, doc_model.additionals)
+
+
+def check_user(user_id: str) -> bool:
+    """Check if a user exists in the database."""
+    with get_session() as db:
+        user = db.get(User, user_id)
+        return user is not None
 
 
 def get_user_resume(user_id: str) -> DocModel | None:

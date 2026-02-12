@@ -2,7 +2,11 @@ from pathlib import Path
 from fastmcp import Context, FastMCP
 import pymupdf
 from doc_utils.doc_builder import DocBuilder
-from doc_utils.doc_model import AdditionalsListedSectionContent, DocModel, SectionContent
+from doc_utils.doc_model import (
+    AdditionalsListedSectionContent,
+    DocModel,
+    SectionContent,
+)
 from fastmcp.server.dependencies import get_access_token
 from db.repo import (
     additionals_repository,
@@ -61,7 +65,6 @@ def register_tools(mcp: FastMCP):
     def save_user_data(data: DocModel):
         """Saves the user's resume data to the database."""
         user_id = get_access_token().claims.get("sub")
-        print(data.user_info.email)
         user_repository.upsert_user(user_id, data)
         return {
             "success": True,
@@ -71,10 +74,15 @@ def register_tools(mcp: FastMCP):
     @mcp.tool()
     def save_catered_resume_data(job: str, data: DocModel):
         """Saves the catered resume data to the database.
-
         Returns the job_name to pass to generate_pdf.
         """
         user_id = get_access_token().claims.get("sub")
+        if not user_repository.check_user(user_id):
+            return {
+                "success": False,
+                "message": "User not found, please ask them to upload a sample resume first to generate a user information pool.",
+            }
+
         catered_resume_repository.save_catered_resume(user_id, job, data)
         return {
             "success": True,
@@ -88,8 +96,15 @@ def register_tools(mcp: FastMCP):
         user_id = get_access_token().claims.get("sub")
         data = catered_resume_repository.get_catered_resume_json(user_id, job_name)
         if data is None:
-            return "Catered resume not found"
-        return data
+            return {
+                "success": False,
+                "message": f"Catered resume not found for {job_name}, Ask them to upload a new job posting and try again.",
+            }
+        return {
+            "success": True,
+            "message": f"Got catered resume data for {data.user_info.full_name} — job: {job_name}",
+            "data": data,
+        }
 
     @mcp.tool()
     def generate_pdf(job_name: str):
@@ -104,10 +119,12 @@ def register_tools(mcp: FastMCP):
         user_id = get_access_token().claims.get("sub")
         doc_model = catered_resume_repository.get_catered_resume(user_id, job_name)
         if doc_model is None:
-            return "Catered Resume data not found"
+            return {
+                "success": False,
+                "message": f"Catered resume not found for {job_name}, Ask them to upload a new job posting and try again.",
+            }
 
         output_dir.mkdir(parents=True, exist_ok=True)
         builder = DocBuilder(doc_model, job_name)
         builder.build()
         return builder.export()
-        

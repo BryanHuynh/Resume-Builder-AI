@@ -4,7 +4,9 @@ from db.database import get_session
 from sqlalchemy import select, delete
 
 
-def upsert_section(user_id: str, section_name: str, content: SectionContent):
+def upsert_section(
+    user_id: str, section_name: str, content: SectionContent, order: int = 0
+):
     with get_session() as session:
         stmt = select(Section).where(
             Section.user_id == user_id, Section.section_name == section_name
@@ -19,7 +21,7 @@ def upsert_section(user_id: str, section_name: str, content: SectionContent):
                 user_id=user_id,
                 section_name=section_name,
                 content=content.model_dump(mode="json"),
-                sort_order=0,
+                sort_order=order,
             )
             session.add(section)
             session.commit()

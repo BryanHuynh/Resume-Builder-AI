@@ -4,10 +4,20 @@ from db.repo import user_repository
 
 
 def register_prompts(mcp: FastMCP):
-    @mcp.prompt("Create a new resume")
+    @mcp.prompt(
+        "Create a new resume",
+        description="""
+Use this prompt when the user wants to create a new resume.
+This prompt will automatically generate a prompt complete with the users details.
+""",
+    )
     def create_resume(company_name: str, position: str, job_posting: str):
-        """Create a tailored resume for a job posting. User is identified from the auth token."""
         user_id = get_access_token().claims.get("sub")
+        if not user_repository.check_user(user_id):
+            return {
+                "success": False,
+                "message": "User not found, please ask them to upload a sample resume first to generate a user information pool.",
+            }
         user_info = user_repository.get_user_resume_json(user_id)
         if user_info is None:
             return "User information not found"
