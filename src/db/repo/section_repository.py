@@ -5,7 +5,7 @@ from sqlalchemy import select, delete
 
 
 def upsert_section(
-    user_id: str, section_name: str, content: SectionContent, order: int = 0
+    user_id: str, section_name: str, content: SectionContent, order: int | None = None
 ):
     with get_session() as session:
         stmt = select(Section).where(
@@ -17,6 +17,8 @@ def upsert_section(
             None,
         )
         if section is None:
+            if order is None:
+                order = max((s.sort_order for s in sections), default=-1) + 1
             section = Section(
                 user_id=user_id,
                 section_name=section_name,
@@ -27,6 +29,8 @@ def upsert_section(
             session.commit()
         else:
             section.content = content.model_dump(mode="json")
+            if order is not None:
+                section.sort_order = order
             session.commit()
 
 
