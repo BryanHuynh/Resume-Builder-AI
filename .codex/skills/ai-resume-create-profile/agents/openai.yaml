@@ -1,0 +1,4 @@
+interface:
+  display_name: "Create Resume Profile"
+  short_description: "Create base resume profiles via MCP"
+  default_prompt: "Use $ai-resume-create-profile to create a new resume user profile."

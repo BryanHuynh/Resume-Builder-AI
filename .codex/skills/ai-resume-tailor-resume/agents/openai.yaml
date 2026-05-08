@@ -1,0 +1,4 @@
+interface:
+  display_name: "Tailor Resume"
+  short_description: "Tailor resumes and generate PDFs via MCP"
+  default_prompt: "Use $ai-resume-tailor-resume to tailor a resume to a job posting and generate a PDF."

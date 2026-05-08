@@ -1,0 +1,4 @@
+interface:
+  display_name: "AI Resume Editor"
+  short_description: "Use the local resume MCP workflows"
+  default_prompt: "Use $ai-resume-editor to create or tailor a resume with the local MCP server."
