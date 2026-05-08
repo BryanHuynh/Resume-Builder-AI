@@ -10,6 +10,11 @@ Core storage:
 - Tailored resumes: `documents/catered_resume_data/{Full_Name_With_Underscores}/{job}.json`
 - Generated outputs: `output/`
 
+Profile discovery:
+
+- Read `doc://resume-names` before choosing a saved base profile. It returns each profile's tool-safe `name`, user-facing `display_name`, and `filename`.
+- Use `name` for MCP tools and `doc://resume/{name}` resource calls.
+
 ## DocModel Shape
 
 ```json

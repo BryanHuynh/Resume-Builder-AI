@@ -28,6 +28,8 @@ Prefer the `mcp__ai_resume_editor__` tools when they are available. If the tools
 
 The local server is this repository's `main.py` stdio MCP server. It stores base profiles in `documents/user_data`, tailored JSON in `documents/catered_resume_data`, and generated PDFs/TeX in `output`.
 
+Before choosing or loading a saved base profile, read the `doc://resume-names` resource. Use its `name` value when calling profile tools or `doc://resume/{name}`, and use `display_name` only for user-facing clarification.
+
 ## Quality Bar
 
 Always keep claims grounded in supplied profile data. Do not invent employers, degrees, dates, certifications, metrics, or contact details. If a required field is missing, ask for it or mark it as intentionally blank only when the user approves.

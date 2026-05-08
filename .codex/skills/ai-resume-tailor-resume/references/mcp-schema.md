@@ -2,6 +2,8 @@
 
 Use the same `DocModel` structure for tailored resumes:
 
+Before choosing a saved base profile, read `doc://resume-names`. It returns each profile's tool-safe `name`, user-facing `display_name`, and `filename`; use `name` for MCP tools and `doc://resume/{name}` resource calls.
+
 ```json
 {
   "user_info": {

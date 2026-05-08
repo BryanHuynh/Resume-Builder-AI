@@ -13,14 +13,15 @@ Read `references/tailor-workflow.md` for the exact workflow and `references/mcp-
 
 ## Workflow
 
-1. Identify the user profile, job/company/title, and job posting requirements.
-2. Invoke or follow the MCP prompt `Create a new resume` with `name`, `company_name`, `position`, and `job_posting`.
-3. Load the base profile through MCP tools/resources when available, or ask for the profile content if it is not available.
-4. Build a complete tailored `DocModel` using only truthful profile facts.
-5. Call `save_catered_resume_data`; keep the returned `filename`.
-6. Call `generate_pdf` with that `filename` and a descriptive `job_name`.
-7. Review metadata, especially `page_count` and `page_fill`, then make targeted page-fit edits if needed.
-8. Return the generated PDF path/URI and summarize the tailoring choices.
+1. Identify the job/company/title and job posting requirements.
+2. Read the `doc://resume-names` resource to find available saved base profiles. Use the returned `name` value as the source profile identifier for MCP tools/resources; use `display_name` only when asking the user to clarify which profile to use.
+3. Invoke or follow the MCP prompt `Create a new resume` with `name`, `company_name`, `position`, and `job_posting`.
+4. Load the base profile through MCP tools/resources when available, or ask for the profile content if it is not available.
+5. Build a complete tailored `DocModel` using only truthful profile facts.
+6. Call `save_catered_resume_data`; keep the returned `filename`.
+7. Call `generate_pdf` with that `filename` and a descriptive `job_name`.
+8. Review metadata, especially `page_count` and `page_fill`, then make targeted page-fit edits if needed.
+9. Return the generated PDF path/URI and summarize the tailoring choices.
 
 ## Tailoring Rules
 
