@@ -11,3 +11,4 @@ wheels/
 documents/
 output/
 CLAUDE.md
+.env
