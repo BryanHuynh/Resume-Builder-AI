@@ -30,6 +30,13 @@ If there is any additional information that you want to know about the user to h
 If there is information about certifications, remove any that are not relevant to the job posting.
 Do not remove any sub-sections, expecially if they include business impact.
 
+Resume section ordering:
+DocBuilder renders the sections dictionary in the order it appears in the JSON, so intentionally order the sections before saving.
+For experienced candidates, use this default order: relevant Work Experience or Professional Experience first, then relevant Projects, Leadership, Activities, or Accomplishments, then Education. Keep Skills, Certifications, and Additional Information at the end unless they are required or unusually important for the target role.
+For recent graduates or candidates with limited direct experience, use this default order: Education first, then Projects, Internships, or Relevant Experience, then Leadership or Activities, then Skills and Additional Information.
+For career changes, place the strongest job-relevant proof near the top, such as relevant projects, transferable experience, required certifications, or role-specific skills.
+Within each section, order entries in reverse chronological order by default. If creating a dedicated relevant section, put the most relevant entries and bullet points first.
+
 Here is the user information:
 {user_info}
 
