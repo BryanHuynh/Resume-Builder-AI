@@ -3,7 +3,11 @@ from pathlib import Path
 from fastmcp import FastMCP
 import pymupdf
 from doc_utils.doc_builder import DocBuilder
-from doc_utils.doc_model import DocModel
+from doc_utils.doc_model import (
+    AdditionalsListedSectionContent,
+    DocModel,
+    SectionContent,
+)
 
 docs_dir = Path("documents")
 user_dir = docs_dir / "user_data"
@@ -12,20 +16,121 @@ catered_resume_dir = docs_dir / "catered_resume_data"
 output_dir = Path("output")
 
 
+def _user_path(name: str) -> Path:
+    return user_dir / f"{name.replace(' ', '_')}.json"
+
+
+def _load_user(name: str) -> DocModel | None:
+    path = _user_path(name)
+    if not path.exists():
+        return None
+    return DocModel.model_validate_json(path.read_text())
+
+
+def _save_user(data: DocModel) -> Path:
+    user_dir.mkdir(parents=True, exist_ok=True)
+    path = _user_path(data.user_info.full_name)
+    path.write_text(data.model_dump_json(indent=2))
+    return path
+
+
 def register_tools(mcp: FastMCP):
     @mcp.tool()
     def save_user_data(data: DocModel):
-        """Saves the users data as a json file to the user_data directory.
-        """
-        user_file_path = data.user_info.full_name.replace(" ", "_")
-        json_data = data.model_dump_json(indent=2)
-        user_dir.mkdir(parents=True, exist_ok=True)
-        user_data = user_dir / f"{user_file_path}.json"
-        with open(user_data, "w") as f:
-            f.write(json_data)
+        """Saves the users data as a json file to the user_data directory."""
+        path = _save_user(data)
         return {
             "success": True,
-            "message": f"Saved user data for {data.user_info.full_name} to {user_data}",
+            "message": f"Saved user data for {data.user_info.full_name} to {path}",
+        }
+
+    @mcp.tool()
+    def get_user_sections(name: str):
+        """Gets the user's sections details from their saved resume data.
+
+        name: The user's full name (matches the saved file in user_data).
+        """
+        data = _load_user(name)
+        if data is None:
+            return {
+                "success": False,
+                "message": f"User {name} not found. Ask them to upload a sample resume first.",
+            }
+        return data.sections
+
+    @mcp.tool()
+    def upsert_user_section(name: str, section_name: str, content: SectionContent):
+        """Updates (or inserts) one entry within a section of the user's saved resume data.
+
+        name: The user's full name (matches the saved file in user_data).
+        section_name: The name of the section to update (eg. "Education", "Work Experience").
+        content: The SectionContent entry. If an entry with the same title already exists
+                 under section_name, it is replaced; otherwise the entry is appended.
+        """
+        data = _load_user(name)
+        if data is None:
+            return {
+                "success": False,
+                "message": f"User {name} not found. Ask them to upload a sample resume first.",
+            }
+        entries = data.sections.get(section_name, [])
+        replaced = False
+        for i, existing in enumerate(entries):
+            if existing.title == content.title:
+                entries[i] = content
+                replaced = True
+                break
+        if not replaced:
+            entries.append(content)
+        data.sections[section_name] = entries
+        _save_user(data)
+        return {
+            "success": True,
+            "message": f"{'Updated' if replaced else 'Added'} entry '{content.title}' in section '{section_name}' for {name}",
+        }
+
+    @mcp.tool()
+    def get_user_additionals(name: str, title: str):
+        """Gets the user's additionals details from their saved resume data.
+
+        name: The user's full name (matches the saved file in user_data).
+        title: The title of the additionals to get (eg. "Certifications", "Skills").
+        """
+        data = _load_user(name)
+        if data is None:
+            return {
+                "success": False,
+                "message": f"User {name} not found. Ask them to upload a sample resume first.",
+            }
+        if data.additionals.title != title:
+            return {
+                "success": False,
+                "message": f"Additionals titled '{title}' not found for {name}.",
+            }
+        return data.additionals
+
+    @mcp.tool()
+    def upsert_user_additionals(
+        name: str, title: str, content: AdditionalsListedSectionContent
+    ):
+        """Updates the user's additionals details in their saved resume data.
+
+        name: The user's full name (matches the saved file in user_data).
+        title: The title of the additionals to update (eg. "Certifications", "Skills").
+        content: The AdditionalsListedSectionContent to store. Replaces the existing
+                 additionals on the user's record.
+        """
+        data = _load_user(name)
+        if data is None:
+            return {
+                "success": False,
+                "message": f"User {name} not found. Ask them to upload a sample resume first.",
+            }
+        data.additionals = content
+        _save_user(data)
+        return {
+            "success": True,
+            "message": f"Updated additionals '{title}' for {name}",
         }
     
     @mcp.tool()
