@@ -80,9 +80,29 @@ class DocBuilder:
     def build_section(self, section_title: str, section_entries: list[SectionContent]):
         with self.doc.create(MiniPage(align="l")) as section:
             section.append(tools.SectionTitle(section_title, section))
-            for entry in section_entries:
-                self.build_section_entry(entry, section=section)
-                section.append(VerticalSpace("0.25cm"))
+            if self.is_single_entry_section_wrapper(section_title, section_entries):
+                self.build_section_entry_content(
+                    section_entries[0],
+                    section=section,
+                    include_leading_linebreak=False,
+                )
+            else:
+                for entry in section_entries:
+                    self.build_section_entry(entry, section=section)
+                    section.append(VerticalSpace("0.25cm"))
+
+    def is_single_entry_section_wrapper(
+        self, section_title: str, section_entries: list[SectionContent]
+    ) -> bool:
+        if len(section_entries) != 1:
+            return False
+
+        entry = section_entries[0]
+        return (
+            entry.title.strip().casefold() == section_title.strip().casefold()
+            and entry.left_subheader.strip() == ""
+            and entry.right_subheader.strip() == ""
+        )
 
     def build_section_entry(self, entry: SectionContent, section: MiniPage):
         section.append(LargeText(bold(entry.title)))
@@ -95,16 +115,23 @@ class DocBuilder:
         section.append(MediumText(italic(entry.left_subheader)))
         section.append(HFill())
         section.append(MediumText(italic(entry.right_subheader)))
+        self.build_section_entry_content(entry, section=section)
+
+    def build_section_entry_content(
+        self,
+        entry: SectionContent,
+        section: MiniPage,
+        include_leading_linebreak: bool = True,
+    ):
         if len(entry.sub_sections) > 0:
-            section.append(LineBreak())
+            if include_leading_linebreak:
+                section.append(LineBreak())
             with section.create(
                 Itemize(options=config.itemize_options)
             ) as itemizer:
                 section.append(Command("vspace", NoEscape("-10pt")))
                 for description in entry.sub_sections:
                     self.build_section_content(itemizer, description)
-
-                
 
 
     def build_section_content(
