@@ -87,6 +87,47 @@ class DocBuilderTests(unittest.TestCase):
         self.assertIn(r"\textit{Bachelor of Science}", tex)
         self.assertIn(r"\textit{Calgary, AB}", tex)
 
+    def test_multi_entry_section_does_not_wrap_all_entries_in_one_minipage(self):
+        model = make_model(
+            "Experience",
+            [
+                SectionContent(
+                    title="First Company",
+                    left_subheader="Developer",
+                    right_subheader="Calgary, AB",
+                    sub_sections=[
+                        SectionContentDescriptions(
+                            description="Built internal tooling.",
+                            sub_sections=[],
+                        )
+                    ],
+                    start_date=date(2024, 1, 1),
+                ),
+                SectionContent(
+                    title="Second Company",
+                    left_subheader="Developer",
+                    right_subheader="Calgary, AB",
+                    sub_sections=[
+                        SectionContentDescriptions(
+                            description="Improved operational workflows.",
+                            sub_sections=[],
+                        )
+                    ],
+                    start_date=date(2025, 1, 1),
+                ),
+            ],
+        )
+
+        builder = DocBuilder(model, "test")
+        builder.build()
+        tex = builder.doc.dumps()
+
+        first_entry = tex.index(r"\textbf{First Company}")
+        second_entry = tex.index(r"\textbf{Second Company}")
+        minipage_end_between_entries = tex.find(r"\end{minipage}", first_entry, second_entry)
+
+        self.assertNotEqual(-1, minipage_end_between_entries)
+
 
 if __name__ == "__main__":
     unittest.main()

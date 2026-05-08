@@ -78,18 +78,19 @@ class DocBuilder:
         self.doc.append(LineBreak())
 
     def build_section(self, section_title: str, section_entries: list[SectionContent]):
-        with self.doc.create(MiniPage(align="l")) as section:
-            section.append(tools.SectionTitle(section_title, section))
-            if self.is_single_entry_section_wrapper(section_title, section_entries):
+        self.doc.append(tools.SectionTitle(section_title, self.doc))
+        if self.is_single_entry_section_wrapper(section_title, section_entries):
+            with self.doc.create(MiniPage(align="l")) as section:
                 self.build_section_entry_content(
                     section_entries[0],
                     section=section,
                     include_leading_linebreak=False,
                 )
-            else:
-                for entry in section_entries:
+        else:
+            for entry in section_entries:
+                with self.doc.create(MiniPage(align="l")) as section:
                     self.build_section_entry(entry, section=section)
-                    section.append(VerticalSpace("0.25cm"))
+                self.doc.append(VerticalSpace("0.25cm"))
 
     def is_single_entry_section_wrapper(
         self, section_title: str, section_entries: list[SectionContent]
