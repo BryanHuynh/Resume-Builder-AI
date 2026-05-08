@@ -1,17 +1,14 @@
 from pylatex.base_classes import Container
-from pylatex import Command, NewLine, MiniPage, LargeText, LineBreak, Package
-from pylatex.utils import NoEscape
-from pylatex.utils import bold
+from pylatex import Command, MiniPage, Package
+from pylatex.utils import NoEscape, bold, escape_latex
 
 horizontal_line = NoEscape(r"\noindent\rule{\textwidth}{0.5pt}")
 
 class SectionDivider(Container):
-    def __init__(self, top_space='-0.25cm', bottom_space='0.05cm'):
+    def __init__(self, bottom_space='0.03cm'):
         super().__init__()
-        if top_space:
-            self.append(Command('vspace', NoEscape(top_space)))
-        self.append(NewLine())
         self.append(NoEscape(r"\noindent\rule{\textwidth}{0.5pt}"))
+        self.append(NoEscape(r"\par"))
         if bottom_space:
             self.append(Command('vspace', NoEscape(bottom_space)))
 
@@ -21,9 +18,9 @@ class SectionDivider(Container):
 class SectionTitle(Container):
     def __init__(self, section_title: str, section: MiniPage):
         super().__init__()
-        section.append(LargeText(bold(section_title)))
+        title = escape_latex(section_title)
+        section.append(NoEscape(rf"\noindent{{\Large\textbf{{{title}}}}}\\[-0.19cm]"))
         section.append(SectionDivider())
-        self.append(NewLine())
             
     def dumps(self):
         return self.dumps_content()
