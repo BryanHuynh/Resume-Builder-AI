@@ -34,6 +34,127 @@ def _save_user(data: DocModel) -> Path:
     return path
 
 
+def _catered_resume_path(filename: str) -> Path:
+    relative_path = Path(filename)
+    if relative_path.is_absolute():
+        raise ValueError("filename must be relative to the catered resume directory")
+
+    base_dir = catered_resume_dir.resolve()
+    resolved_path = (base_dir / relative_path).resolve()
+    if resolved_path != base_dir and base_dir not in resolved_path.parents:
+        raise ValueError("filename must stay within the catered resume directory")
+    return resolved_path
+
+
+def _load_catered_resume(filename: str) -> DocModel:
+    resume_path = _catered_resume_path(filename)
+    if not resume_path.exists():
+        raise FileNotFoundError(f"Catered resume data not found: {filename}")
+    return DocModel.model_validate_json(resume_path.read_text())
+
+
+def _save_catered_resume(filename: str, data: DocModel) -> Path:
+    resume_path = _catered_resume_path(filename)
+    resume_path.parent.mkdir(parents=True, exist_ok=True)
+    resume_path.write_text(data.model_dump_json(indent=2))
+    return resume_path
+
+
+def _get_catered_resume_outline_from_model(data: DocModel) -> dict:
+    return {
+        "user": data.user_info.full_name,
+        "sections": [
+            {
+                "name": section_name,
+                "subsections": [
+                    {"index": index, "title": entry.title}
+                    for index, entry in enumerate(entries)
+                ],
+            }
+            for section_name, entries in data.sections.items()
+        ],
+        "additionals": {
+            "title": data.additionals.title,
+            "keys": list(data.additionals.items.keys()),
+        },
+    }
+
+
+def _upsert_resume_section(
+    data: DocModel, section_name: str, content: list[SectionContent]
+) -> tuple[DocModel, bool]:
+    updated = data.model_copy(deep=True)
+    replaced = section_name in updated.sections
+    updated.sections[section_name] = content
+    return updated, replaced
+
+
+def _delete_resume_section(data: DocModel, section_name: str) -> tuple[DocModel, bool]:
+    updated = data.model_copy(deep=True)
+    deleted = section_name in updated.sections
+    if deleted:
+        del updated.sections[section_name]
+    return updated, deleted
+
+
+def _upsert_resume_subsection(
+    data: DocModel, section_name: str, content: SectionContent
+) -> tuple[DocModel, bool]:
+    updated = data.model_copy(deep=True)
+    entries = updated.sections.setdefault(section_name, [])
+
+    for index, entry in enumerate(entries):
+        if entry.title == content.title:
+            entries[index] = content
+            return updated, True
+
+    entries.append(content)
+    return updated, False
+
+
+def _delete_resume_subsection(
+    data: DocModel, section_name: str, title: str
+) -> tuple[DocModel, bool]:
+    updated = data.model_copy(deep=True)
+    entries = updated.sections.get(section_name)
+    if entries is None:
+        return updated, False
+
+    for index, entry in enumerate(entries):
+        if entry.title == title:
+            entries.pop(index)
+            return updated, True
+
+    return updated, False
+
+
+def _upsert_resume_additionals(
+    data: DocModel, content: AdditionalsListedSectionContent
+) -> DocModel:
+    updated = data.model_copy(deep=True)
+    updated.additionals = content
+    return updated
+
+
+def _upsert_resume_additional_subsection(
+    data: DocModel, item_key: str, items: list[str]
+) -> tuple[DocModel, bool]:
+    updated = data.model_copy(deep=True)
+    replaced = item_key in updated.additionals.items
+    updated.additionals.items[item_key] = items
+    return updated, replaced
+
+
+def _delete_resume_additional_subsection(
+    data: DocModel, item_key: str
+) -> tuple[DocModel, bool]:
+    updated = data.model_copy(deep=True)
+    deleted = item_key in updated.additionals.items
+    if deleted:
+        del updated.additionals.items[item_key]
+    return updated, deleted
+
+
 def register_tools(mcp: FastMCP):
     @mcp.tool()
     def save_user_data(data: DocModel):
@@ -162,6 +283,257 @@ def register_tools(mcp: FastMCP):
             return None
         with open(job_data, "r") as f:
             return f.read()
+
+    @mcp.tool()
+    def get_catered_resume_outline(filename: str):
+        """Gets section and subsection names for an existing catered resume.
+
+        Use this after save_catered_resume_data when a generated PDF needs a
+        small page-fit adjustment. This avoids resending the full DocModel.
+        """
+        try:
+            data = _load_catered_resume(filename)
+        except (FileNotFoundError, ValueError) as exc:
+            return {"success": False, "message": str(exc)}
+
+        return {
+            "success": True,
+            "filename": filename,
+            "outline": _get_catered_resume_outline_from_model(data),
+        }
+
+    @mcp.tool()
+    def get_catered_resume_section(filename: str, section_name: str):
+        """Gets one whole section from an existing catered resume."""
+        try:
+            data = _load_catered_resume(filename)
+        except (FileNotFoundError, ValueError) as exc:
+            return {"success": False, "message": str(exc)}
+
+        if section_name not in data.sections:
+            return {
+                "success": False,
+                "message": f"Section '{section_name}' not found",
+            }
+        return {
+            "success": True,
+            "filename": filename,
+            "section_name": section_name,
+            "content": data.sections[section_name],
+        }
+
+    @mcp.tool()
+    def upsert_catered_resume_section(
+        filename: str, section_name: str, content: list[SectionContent]
+    ):
+        """Creates or replaces one whole section in an existing catered resume."""
+        try:
+            data = _load_catered_resume(filename)
+            updated, replaced = _upsert_resume_section(data, section_name, content)
+            path = _save_catered_resume(filename, updated)
+        except (FileNotFoundError, ValueError) as exc:
+            return {"success": False, "message": str(exc)}
+
+        action = "Updated" if replaced else "Added"
+        return {
+            "success": True,
+            "message": f"{action} section '{section_name}' in {path}",
+            "filename": filename,
+        }
+
+    @mcp.tool()
+    def delete_catered_resume_section(filename: str, section_name: str):
+        """Deletes one whole section from an existing catered resume."""
+        try:
+            data = _load_catered_resume(filename)
+            updated, deleted = _delete_resume_section(data, section_name)
+            path = _save_catered_resume(filename, updated)
+        except (FileNotFoundError, ValueError) as exc:
+            return {"success": False, "message": str(exc)}
+
+        return {
+            "success": deleted,
+            "message": (
+                f"Deleted section '{section_name}' from {path}"
+                if deleted
+                else f"Section '{section_name}' not found"
+            ),
+            "filename": filename,
+        }
+
+    @mcp.tool()
+    def get_catered_resume_subsection(
+        filename: str, section_name: str, subsection_title: str
+    ):
+        """Gets one whole subsection entry from a section in a catered resume."""
+        try:
+            data = _load_catered_resume(filename)
+        except (FileNotFoundError, ValueError) as exc:
+            return {"success": False, "message": str(exc)}
+
+        entries = data.sections.get(section_name)
+        if entries is None:
+            return {
+                "success": False,
+                "message": f"Section '{section_name}' not found",
+            }
+        for entry in entries:
+            if entry.title == subsection_title:
+                return {
+                    "success": True,
+                    "filename": filename,
+                    "section_name": section_name,
+                    "content": entry,
+                }
+        return {
+            "success": False,
+            "message": (
+                f"Subsection '{subsection_title}' not found in section "
+                f"'{section_name}'"
+            ),
+        }
+
+    @mcp.tool()
+    def upsert_catered_resume_subsection(
+        filename: str, section_name: str, content: SectionContent
+    ):
+        """Creates or replaces one whole subsection entry in a catered resume."""
+        try:
+            data = _load_catered_resume(filename)
+            updated, replaced = _upsert_resume_subsection(data, section_name, content)
+            path = _save_catered_resume(filename, updated)
+        except (FileNotFoundError, ValueError) as exc:
+            return {"success": False, "message": str(exc)}
+
+        action = "Updated" if replaced else "Added"
+        return {
+            "success": True,
+            "message": (
+                f"{action} subsection '{content.title}' in section "
+                f"'{section_name}' at {path}"
+            ),
+            "filename": filename,
+        }
+
+    @mcp.tool()
+    def delete_catered_resume_subsection(
+        filename: str, section_name: str, subsection_title: str
+    ):
+        """Deletes one whole subsection entry from an existing catered resume."""
+        try:
+            data = _load_catered_resume(filename)
+            updated, deleted = _delete_resume_subsection(
+                data, section_name, subsection_title
+            )
+            path = _save_catered_resume(filename, updated)
+        except (FileNotFoundError, ValueError) as exc:
+            return {"success": False, "message": str(exc)}
+
+        return {
+            "success": deleted,
+            "message": (
+                f"Deleted subsection '{subsection_title}' from {path}"
+                if deleted
+                else (
+                    f"Subsection '{subsection_title}' not found in section "
+                    f"'{section_name}'"
+                )
+            ),
+            "filename": filename,
+        }
+
+    @mcp.tool()
+    def get_catered_resume_additionals(filename: str):
+        """Gets the whole additionals section from an existing catered resume."""
+        try:
+            data = _load_catered_resume(filename)
+        except (FileNotFoundError, ValueError) as exc:
+            return {"success": False, "message": str(exc)}
+
+        return {
+            "success": True,
+            "filename": filename,
+            "content": data.additionals,
+        }
+
+    @mcp.tool()
+    def upsert_catered_resume_additionals(
+        filename: str, content: AdditionalsListedSectionContent
+    ):
+        """Replaces the whole additionals section in an existing catered resume."""
+        try:
+            data = _load_catered_resume(filename)
+            updated = _upsert_resume_additionals(data, content)
+            path = _save_catered_resume(filename, updated)
+        except (FileNotFoundError, ValueError) as exc:
+            return {"success": False, "message": str(exc)}
+
+        return {
+            "success": True,
+            "message": f"Updated additionals '{content.title}' in {path}",
+            "filename": filename,
+        }
+
+    @mcp.tool()
+    def get_catered_resume_additional_subsection(filename: str, item_key: str):
+        """Gets one whole additionals subsection list from a catered resume."""
+        try:
+            data = _load_catered_resume(filename)
+        except (FileNotFoundError, ValueError) as exc:
+            return {"success": False, "message": str(exc)}
+
+        if item_key not in data.additionals.items:
+            return {
+                "success": False,
+                "message": f"Additional subsection '{item_key}' not found",
+            }
+        return {
+            "success": True,
+            "filename": filename,
+            "item_key": item_key,
+            "items": data.additionals.items[item_key],
+        }
+
+    @mcp.tool()
+    def upsert_catered_resume_additional_subsection(
+        filename: str, item_key: str, items: list[str]
+    ):
+        """Creates or replaces one whole additionals subsection list."""
+        try:
+            data = _load_catered_resume(filename)
+            updated, replaced = _upsert_resume_additional_subsection(
+                data, item_key, items
+            )
+            path = _save_catered_resume(filename, updated)
+        except (FileNotFoundError, ValueError) as exc:
+            return {"success": False, "message": str(exc)}
+
+        action = "Updated" if replaced else "Added"
+        return {
+            "success": True,
+            "message": f"{action} additional subsection '{item_key}' in {path}",
+            "filename": filename,
+        }
+
+    @mcp.tool()
+    def delete_catered_resume_additional_subsection(filename: str, item_key: str):
+        """Deletes one whole additionals subsection list."""
+        try:
+            data = _load_catered_resume(filename)
+            updated, deleted = _delete_resume_additional_subsection(data, item_key)
+            path = _save_catered_resume(filename, updated)
+        except (FileNotFoundError, ValueError) as exc:
+            return {"success": False, "message": str(exc)}
+
+        return {
+            "success": deleted,
+            "message": (
+                f"Deleted additional subsection '{item_key}' from {path}"
+                if deleted
+                else f"Additional subsection '{item_key}' not found"
+            ),
+            "filename": filename,
+        }
 
     @mcp.tool()
     def generate_pdf(filename: str, job_name: str):

@@ -42,8 +42,9 @@ Here is the user information:
 
 Use the save_catered_resume_data tool to save the resume data to the catered_resume_data directory before making the call to generate_pdf.
 The save_catered_resume_data tool returns a "filename" field — pass that value as the filename parameter to generate_pdf.
-If the generated resume is more than 1 page, remake the catered_resume_data and save it again.
-Repeat the process until the generated resume is no more than 1 page.
-If the page_fill is less than 0.90, add more content to better fill the page.
+After the first save, do not resend the full resume for small page-fit changes.
+If the generated resume is more than 1 page, call get_catered_resume_outline with the returned filename, then use the catered resume CRUD tools to remove or replace whole sections, whole subsection entries, or whole additionals subsection lists only.
+If the page_fill is less than 0.90, call get_catered_resume_outline with the returned filename, then use the catered resume CRUD tools to add or replace whole sections, whole subsection entries, or whole additionals subsection lists only.
+After each CRUD operation, call generate_pdf again with the same filename and repeat until the generated resume is no more than 1 page and the page_fill is at least 0.90 when possible.
 """
         return prompt
